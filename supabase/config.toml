@@ -1,0 +1,7 @@
+project_id = "bazeunblcxhhzgidfdcn"
+
+[functions.check-pending-forms]
+verify_jwt = false
+
+[functions.update-form-status]
+verify_jwt = false
