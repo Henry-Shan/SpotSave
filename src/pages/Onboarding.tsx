@@ -78,7 +78,7 @@ const Onboarding = () => {
 
       toast({
         title: "Profile completed!",
-        description: "Welcome to FormFiller AI",
+        description: "Welcome to SpotSave",
       });
 
       navigate("/dashboard");

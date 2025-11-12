@@ -104,7 +104,7 @@ const Auth = () => {
         <div className="backdrop-blur-xl bg-card/50 border border-primary/20 rounded-2xl p-8 shadow-neon">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold bg-gradient-accent bg-clip-text text-transparent mb-2">
-              FormFiller AI
+              SpotSave
             </h1>
             <p className="text-muted-foreground">Automated form submission system</p>
           </div>

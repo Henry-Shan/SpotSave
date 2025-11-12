@@ -3,16 +3,32 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Zap, Calendar, Link as LinkIcon } from "lucide-react";
+import { Label } from "@/components/ui/label";
+
+import {
+  Zap,
+  Calendar as CalendarIcon,
+  Link as LinkIcon,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Session } from "@supabase/supabase-js";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [session, setSession] = useState<Session | null>(null);
   const [formUrl, setFormUrl] = useState("");
-  const [scheduledTime, setScheduledTime] = useState("");
+  const [scheduledTime, setScheduledTime] = useState<Date | undefined>(
+    new Date()
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -20,7 +36,9 @@ const Index = () => {
       setSession(session);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
 
@@ -49,7 +67,7 @@ const Index = () => {
         .insert({
           user_id: session.user.id,
           form_url: formUrl,
-          scheduled_time: scheduledTime,
+          scheduled_time: scheduledTime.toISOString(),
           status: "pending",
         });
 
@@ -73,6 +91,15 @@ const Index = () => {
     }
   };
 
+  const handleDateSelect = (day: Date | undefined) => {
+    if (!day) return;
+    const newDateTime = scheduledTime ? new Date(scheduledTime) : new Date();
+    newDateTime.setFullYear(day.getFullYear());
+    newDateTime.setMonth(day.getMonth());
+    newDateTime.setDate(day.getDate());
+    setScheduledTime(newDateTime);
+  };
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/10" />
@@ -82,7 +109,6 @@ const Index = () => {
         opacity: 0.3,
       }} />
       
-      {/* Animated Abstract Shapes */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-primary/20 rounded-full blur-3xl animate-float" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/20 rounded-full blur-3xl animate-float-delayed" />
@@ -90,45 +116,101 @@ const Index = () => {
       </div>
 
       <div className="text-center relative z-10 max-w-4xl mx-auto">
+        {/* ... (header JSX) ... */}
         <div className="mb-6 flex justify-center">
           <Zap className="w-20 h-20 text-primary animate-pulse" />
         </div>
         <h1 className="text-6xl font-bold bg-gradient-accent bg-clip-text text-transparent mb-6 leading-tight">
-          FormFiller AI
+          SpotSave
         </h1>
         <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto">
-          Automated Google Form submission system for Rice University students. 
-          Schedule forms to be filled automatically at specific times.
+          Schedule your sign-up. Guarantee your spot.
         </p>
 
-        {/* Schedule Form Section */}
         <div className="backdrop-blur-xl bg-card/80 border border-primary/30 rounded-2xl p-8 mb-8 max-w-2xl mx-auto w-full">
           <h2 className="text-2xl font-bold mb-6 text-center bg-gradient-accent bg-clip-text text-transparent">
-            Schedule New Form
+            New Party Coming Up?
           </h2>
           
-          <div className="space-y-4">
-            <div className="relative">
-              <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                type="url"
-                placeholder="Google Form URL"
-                value={formUrl}
-                onChange={(e) => setFormUrl(e.target.value)}
-                className="pl-10 bg-background/50 border-primary/20"
-              />
+          {/* --- MODIFIED FORM STRUCTURE --- */}
+          <div className="space-y-6"> {/* Increased spacing between groups */}
+            
+            {/* Group 1: Party Link */}
+            <div className="space-y-2 text-left">
+              <Label htmlFor="form-url" className="text-base font-medium">
+                Party Link
+              </Label>
+              <div className="relative">
+                <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  id="form-url"
+                  type="url"
+                  placeholder="https://docs.google.com/forms/"
+                  value={formUrl}
+                  onChange={(e) => setFormUrl(e.target.value)}
+                  className="pl-10 bg-background/50 border-primary/20"
+                />
+              </div>
             </div>
             
-            <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                type="datetime-local"
-                value={scheduledTime}
-                onChange={(e) => setScheduledTime(e.target.value)}
-                className="pl-10 bg-background/50 border-primary/20"
-              />
+            {/* Group 2: Release Time */}
+            <div className="space-y-2 text-left">
+              <Label htmlFor="release-time-trigger" className="text-base font-medium">
+                Schedule Time
+              </Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="release-time-trigger"
+                    variant={"outline"}
+                    className={cn(
+                      "w-full justify-start text-left font-normal pl-10 relative bg-background/50 border-primary/20 hover:text-primary",
+                      !scheduledTime && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    {scheduledTime ? (
+                      format(scheduledTime, "PPP 'at' p")
+                    ) : (
+                      <span>Pick a date and time</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={scheduledTime}
+                    onSelect={handleDateSelect}
+                    initialFocus
+                    classNames={{
+                      day_today: "bg-transparent",
+                    }}
+                  />
+                  <div className="p-4 border-t border-border">
+                    <p className="text-sm font-medium mb-2">Time</p>
+                    <Input
+                      type="time"
+                      className="bg-background"
+                      value={scheduledTime ? format(scheduledTime, "HH:mm") : "00:00"}
+                      onChange={(e) => {
+                        const [hours, minutes] = e.target.value.split(':').map(Number);
+                        const newDateTime = scheduledTime ? new Date(scheduledTime) : new Date();
+                        newDateTime.setHours(hours);
+                        newDateTime.setMinutes(minutes);
+                        setScheduledTime(newDateTime);
+                      }}
+                    />
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Please set the time in <strong>Houston (CST)</strong>.
+                    </p>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
 
+            {/* Group 3: Submit Button */}
+           
             <Button 
               variant="neon" 
               size="lg"
